@@ -15,6 +15,9 @@
 
 """
 For discrimination finetuning (e.g. saying whether or not the generation is human/grover)
+
+
+python run_discrimination.py --output_dir ./discriminator_checkpoint/ --input_data ./data/simple.jsonl --predict_val True
 """
 import json
 import os
@@ -39,7 +42,7 @@ flags.DEFINE_string(
     "This specifies the model architecture.")
 
 flags.DEFINE_string(
-    "input_data", None,
+    "input_data", "./glover/data",
     "The input data dir. Should contain the .tsv files (or other data files) for the task.")
 
 flags.DEFINE_string(
@@ -47,13 +50,17 @@ flags.DEFINE_string(
     "Should we provide additional input data? maybe.")
 
 flags.DEFINE_string(
-    "output_dir", None,
+    "output_dir", "./glover/outputs",
     "The output directory where the model checkpoints will be written.")
 
 ## Other parameters
 flags.DEFINE_string(
     "init_checkpoint", None,
     "Initial checkpoint (usually from a pre-trained model).")
+
+flags.DEFINE_string(
+    "ingore_model_folder_check", True,
+    "Ignore the check block validating there are stored models")
 
 flags.DEFINE_integer(
     "max_seq_length", 1024,
@@ -143,7 +150,9 @@ def main(_):
     tf.logging.set_verbosity(tf.logging.INFO)
 
     # These lines of code are just to check if we've already saved something into the directory
-    if tf.gfile.Exists(FLAGS.output_dir):
+    if FLAGS.ingore_model_folder_check:
+        pass
+    elif tf.gfile.Exists(FLAGS.output_dir) or not FLAGS.ingore_model_folder_check:
         print(f"The output directory {FLAGS.output_dir} exists!")
         if FLAGS.do_train:
             print("EXITING BECAUSE DO_TRAIN is true", flush=True)
@@ -167,8 +176,6 @@ def main(_):
         if stuff['model_checkpoint_path'] == 'model.ckpt-0':
             print("EXITING BECAUSE IT LOOKS LIKE NOTHING TRAINED", flush=True)
             return
-
-
     elif not FLAGS.do_train:
         print("EXITING BECAUSE DO_TRAIN IS FALSE AND PATH DOESNT EXIST")
         return
@@ -237,7 +244,7 @@ def main(_):
         print("Length of examples: {} -> {}".format(len(examples['train']), len(new_examples)), flush=True)
         examples['train'] = new_examples
 
-    # Training
+    # =============== SETUP TRAINING ===============
     if FLAGS.do_train:
         num_train_steps = int((len(examples['train']) / FLAGS.batch_size) * FLAGS.num_train_epochs)
         num_warmup_steps = int(num_train_steps * FLAGS.warmup_proportion)
@@ -246,7 +253,7 @@ def main(_):
         num_train_steps = None
         num_warmup_steps = None
 
-    # Boilerplate
+    # =============== TRAINING BOILERPLATE ===============
     tpu_cluster_resolver = None
     if FLAGS.use_tpu and FLAGS.tpu_name:
         tpu_cluster_resolver = tf.contrib.cluster_resolver.TPUClusterResolver(
@@ -287,7 +294,9 @@ def main(_):
         predict_batch_size=FLAGS.batch_size,
         params={'model_dir': FLAGS.output_dir}
     )
+    # =============== END TRAINING BOILERPLATE ===============
 
+    # =============== TRAINING ===============
     if FLAGS.do_train:
         train_file = os.path.join(FLAGS.output_dir, "train.tf_record")
 
@@ -307,8 +316,10 @@ def main(_):
                                                          is_training=True, drop_remainder=True,
                                                          )
         estimator.train(input_fn=train_input_fn, steps=num_train_steps)
+    # =============== END TRAINING ===============
 
-    splits_to_predict = [x for x in ['val', 'test'] if getattr(FLAGS, f'predict_{x}')]
+    # =============== PREDICTION ===============
+    splits_to_predict = [x for x in ['val', 'test', 'pred'] if getattr(FLAGS, f'predict_{x}')]
     for split in splits_to_predict:
         num_actual_examples = len(examples[split])
 
@@ -323,7 +334,7 @@ def main(_):
         val_input_fn = classification_input_fn_builder(input_file=predict_file, seq_length=FLAGS.max_seq_length,
                                                        is_training=False, drop_remainder=True,
                                                        )
-
+        # PREDICT
         probs = np.zeros((num_actual_examples, 2), dtype=np.float32)
         for i, res in enumerate(estimator.predict(input_fn=val_input_fn, yield_single_examples=True)):
             if i < num_actual_examples:
@@ -334,7 +345,7 @@ def main(_):
         preds = np.argmax(probs, 1)
         labels = np.array([LABEL_INV_MAP[x['label']] for x in examples[split][:num_actual_examples]])
         print('{} ACCURACY IS {:.3f}'.format(split, np.mean(labels == preds)), flush=True)
-
+    # =============== END PREDICTION ===============
 
 if __name__ == "__main__":
     print('blah')

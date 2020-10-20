@@ -4,6 +4,8 @@ Turn a merged corpus into tfrecord files.
 NOTE: You will want to do this using several processes. I did this on an AWS machine with 72 CPUs using GNU parallel
 as that's where I had the deduplicated RealNews dataset.
 """
+
+sys.path.append('../')
 import argparse
 import ujson as json
 from sample.encoder import get_encoder, tokenize_for_grover_training, detokenize, sliding_window, create_int_feature

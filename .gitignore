@@ -1,6 +1,6 @@
 # local stuff
 data/
-model_checkpoints/
+outputs/
 generator=mega*
 
 # Byte-compiled / optimized / DLL files
