@@ -26,3 +26,12 @@ calls = [
 
 for c in calls:
     subprocess.run(c,shell = 'bash')
+
+import json
+
+with open('./grover/data/generator=mega~dataset=p0.94.jsonl','r') as response:
+    result = [json.loads(jline) for jline in response.read().splitlines()]
+
+import jsonlines
+with jsonlines.open('./grover/data/simple.jsonl', mode='w') as writer:
+    writer.write(result[:20])

@@ -17,7 +17,7 @@
 For discrimination finetuning (e.g. saying whether or not the generation is human/grover)
 
 
-python run_discrimination.py --output_dir ./discriminator_checkpoint/ --input_data ./data/simple.jsonl --predict_val True
+python run_discrimination.py --output_dir ./outputs/ --input_data ./data/simple.jsonl --predict_val True
 """
 import json
 import os
