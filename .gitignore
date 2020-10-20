@@ -1,3 +1,8 @@
+# local stuff
+data/
+model_checkpoints/
+generator=mega*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -34,7 +34,7 @@ FLAGS = flags.FLAGS
 
 ## Required parameters
 flags.DEFINE_string(
-    "config_file", 'configs/base.json',
+    "config_file", 'lm/configs/large.json',
     "The config json file corresponding to the pre-trained news model. "
     "This specifies the model architecture.")
 
@@ -126,7 +126,10 @@ def _flatten_and_tokenize_metadata(encoder, item):
     metadata = []
     for key in ['domain', 'date', 'authors', 'title', 'article']:
         val = item.get(key, None)
+
         if val is not None:
+            if isinstance(val,list):
+                val = ', '.join(val)
             metadata.append(encoder.__dict__[f'begin_{key}'])
             metadata.extend(encoder.encode(val))
             metadata.append(encoder.__dict__[f'end_{key}'])
@@ -334,6 +337,7 @@ def main(_):
 
 
 if __name__ == "__main__":
+    print('blah')
     flags.mark_flag_as_required("input_data")
     flags.mark_flag_as_required("output_dir")
     tf.app.run()
