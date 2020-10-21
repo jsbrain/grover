@@ -1,4 +1,7 @@
 import subprocess
+import json
+import jsonlines
+import os
 
 discriminator_mode = 'mega' # 'medium'
 
@@ -8,6 +11,9 @@ if discriminator_mode == 'mega':
 elif discriminator_mode == 'medium':
     model = 'large'
     p = '0.96'
+
+use_samples = 20
+use_split = 'val'
 
 ggl = 'https://storage.googleapis.com/grover-models/'
 
@@ -27,11 +33,13 @@ calls = [
 for c in calls:
     subprocess.run(c,shell = 'bash')
 
-import json
-
 with open('./grover/data/generator=mega~dataset=p0.94.jsonl','r') as response:
     result = [json.loads(jline) for jline in response.read().splitlines()]
 
-import jsonlines
-with jsonlines.open('./grover/data/simple.jsonl', mode='w') as writer:
-    writer.write(result[:20])
+for r in result[:use_samples]:
+    r['split'] = use_split
+
+f = jsonlines.open('./grover/data/simple.jsonl', mode='a')
+for r in result[:use_samples]:
+    f.write(r)
+f.close()

@@ -58,7 +58,7 @@ flags.DEFINE_string(
     "init_checkpoint", None,
     "Initial checkpoint (usually from a pre-trained model).")
 
-flags.DEFINE_string(
+flags.DEFINE_bool(
     "ingore_model_folder_check", True,
     "Ignore the check block validating there are stored models")
 
@@ -319,7 +319,7 @@ def main(_):
     # =============== END TRAINING ===============
 
     # =============== PREDICTION ===============
-    splits_to_predict = [x for x in ['val', 'test', 'pred'] if getattr(FLAGS, f'predict_{x}')]
+    splits_to_predict = [x for x in ['val', 'test'] if getattr(FLAGS, f'predict_{x}')]
     for split in splits_to_predict:
         num_actual_examples = len(examples[split])
 
